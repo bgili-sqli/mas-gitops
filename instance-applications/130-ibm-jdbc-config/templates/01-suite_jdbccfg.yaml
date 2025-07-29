@@ -42,9 +42,6 @@ spec:
   displayName: "{{ .Values.mas_config_name }}"
   config:
     url: "{{ .Values.jdbc_connection_url }}"
-    sslEnabled: true
+    sslEnabled: false
     credentials:
-      secretName: "{{ .Values.mas_config_name }}-credentials" 
-  certificates:
-    - alias: "{{ .Values.jdbc_instance_name | lower }}"
-{{ .Values.jdbc_ca_pem | toYaml | indent 6 }}
+      secretName: "{{ .Values.mas_config_name }}-credentials"
