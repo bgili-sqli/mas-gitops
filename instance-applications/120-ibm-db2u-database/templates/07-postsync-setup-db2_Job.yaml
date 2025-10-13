@@ -9,7 +9,7 @@ Meaningful prefix for the job resource name. Must be under 52 chars in length to
 Use the build/bin/set-cli-image-digest.sh script to update this value across all charts.
 Included in $_job_hash (see below).
 */}}
-{{- $_cli_image_digest := "sha256:b3ecce096368c967bbc6bac2f074473a65418462417b6e550ad4777427c3b06b" }}
+{{- $_cli_image_digest := "sha256:1b88f88a1a719d006ea1f4b8dcfd1c2625fa7ecc529c3267e7b4b6afaa1c8da0" }}
 
 {{- /*
 A dict of values that influence the behaviour of the job in some way.
@@ -26,7 +26,7 @@ Increment this value whenever you make a change to an immutable field of the Job
 E.g. passing in a new environment variable.
 Included in $_job_hash (see below).
 */}}
-{{- $_job_version := "v14" }}
+{{- $_job_version := "v15" }}
 
 {{- /*
 10 char hash appended to the job name taking into account $_job_config_values, $_job_version and $_cli_image_digest
@@ -206,6 +206,8 @@ spec:
               value: {{ .Values.instance_id }}
             - name: MAS_APP_ID
               value: {{ .Values.mas_application_id}}
+            - name: JDBC_CONNECTION_URL_ADDITIONAL_PARAMS
+              value: {{ .Values.jdbc_connection_url_additional_params  }}
             # Hard-coded for now:
             - name: AVP_TYPE
               value: "aws"
@@ -336,6 +338,8 @@ spec:
               echo "DB2_NAMESPACE ....................... ${DB2_NAMESPACE}"
               echo "DB2_INSTANCE_NAME ................... ${DB2_INSTANCE_NAME}"
               echo "DB2_DBNAME .......................... ${DB2_DBNAME}"
+              echo "JDBC_CONNECTION_URL_ADDITIONAL_PARAMS ........... ${JDBC_CONNECTION_URL_ADDITIONAL_PARAMS}"
+              echo "JDBC_CONNECTION_URL_ADDITIONAL_PARAMS is defined: $(if [[ -n "${JDBC_CONNECTION_URL_ADDITIONAL_PARAMS}" ]]; then echo 'YES'; else echo 'NO'; fi)"
 
               export SM_AWS_ACCESS_KEY_ID=$(cat /etc/mas/creds/aws/aws_access_key_id)
               export SM_AWS_SECRET_ACCESS_KEY=$(cat /etc/mas/creds/aws/aws_secret_access_key)
@@ -752,7 +756,17 @@ spec:
               echo ""
               echo "Construsting JDBC_CONNECTION_URL"
               echo "--------------------------------------------------------------------------------"
-              export JDBC_CONNECTION_URL="jdbc:db2://c-${DB2_INSTANCE_NAME}-db2u-engn-svc.${DB2_NAMESPACE}.svc:${DB2_TLS_SERVICEPORT}/${DB2_DBNAME}:sslConnection=true;sslVersion=${DB2_TLS_VERSION};"
+              if [[ "$MAS_APP_ID" == "facilities" ]]; then
+                export JDBC_CONNECTION_URL="jdbc:db2://c-${DB2_INSTANCE_NAME}-db2u-engn-svc.${DB2_NAMESPACE}.svc:${DB2_TLS_SERVICEPORT}/${DB2_DBNAME}:sslConnection=true;sslVersion=${DB2_TLS_VERSION};currentSchema=${DB2_SCHEMA};"
+              else
+                export JDBC_CONNECTION_URL="jdbc:db2://c-${DB2_INSTANCE_NAME}-db2u-engn-svc.${DB2_NAMESPACE}.svc:${DB2_TLS_SERVICEPORT}/${DB2_DBNAME}:sslConnection=true;sslVersion=${DB2_TLS_VERSION};"
+              fi
+              
+              if [[ -n "$JDBC_CONNECTION_URL_ADDITIONAL_PARAMS" ]]; then
+                 export JDBC_CONNECTION_URL="${JDBC_CONNECTION_URL}${JDBC_CONNECTION_URL_ADDITIONAL_PARAMS};"
+              fi
+                
+              
 
               echo ""
               echo "Updating Secrets Manager"
